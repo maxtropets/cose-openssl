@@ -13,20 +13,20 @@ permissions: read-all
 
 jobs:
   ci:
-    name: "CI" # CI Checks, Clang Tidy, Python package tests, Doc build, Unit tests, Partitions tests
+    name: "CI"
     runs-on: ubuntu-slim
-    container:
-      image: mcr.microsoft.com/azurelinux/base/core:3.0
-      options: --user root --publish-all --cap-add NET_ADMIN --cap-add NET_RAW --cap-add SYS_PTRACE
+    # container:
+    #   image: mcr.microsoft.com/azurelinux/base/core:3.0
+    #   options: --user root --publish-all --cap-add NET_ADMIN --cap-add NET_RAW --cap-add SYS_PTRACE
 
     steps:
-      - name: "Checkout dependencies"
-        shell: bash
-        run: |
-          set -ex
-          gpg --import /etc/pki/rpm-gpg/MICROSOFT-RPM-GPG-KEY
-          tdnf -y update
-          tdnf -y install ca-certificates git
+      # - name: "Checkout dependencies"
+      #   shell: bash
+      #   run: |
+      #     set -ex
+      #     gpg --import /etc/pki/rpm-gpg/MICROSOFT-RPM-GPG-KEY
+      #     tdnf -y update
+      #     tdnf -y install ca-certificates git
 
       - uses: actions/checkout@v6
         with:
