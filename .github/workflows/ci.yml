@@ -24,7 +24,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: "Setup"
+      - name: "Setup checks"
         shell: bash
         run: |
           set -ex
@@ -37,9 +37,17 @@ jobs:
           set -ex
           cargo fmt -- --check
       
+      - name: "Setup OpenSSL"
+        shell: bash
+        run: |
+          set -ex
+          sudo --preserve-env=HOME ./scripts/setup-openssl.sh
+
       - name: "Run tests"
         shell: bash
-        run : |
+        env:
+          OPENSSL_DIR: /opt/openssl
+          LD_PRELOAD: /opt/openssl/lib64/libcrypto.so:/opt/openssl/lib64/libssl.so
+        run: |
           set -ex
-          ./scripts/setup-openssl.sh
           cargo test
