@@ -92,10 +92,7 @@ pub enum MdCtxPurpose {
 }
 
 impl EvpMdContext {
-    pub fn new(
-        key: &EvpKey,
-        purpose: MdCtxPurpose,
-    ) -> Result<Self, String> {
+    pub fn new(key: &EvpKey, purpose: MdCtxPurpose) -> Result<Self, String> {
         unsafe {
             let ctx = ossl::EVP_MD_CTX_new();
             if ctx.is_null() {

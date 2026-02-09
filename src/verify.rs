@@ -1,12 +1,8 @@
-use crate::ossl_wrappers::{EvpMdContext, EvpKey, MdCtxPurpose};
+use crate::ossl_wrappers::{EvpKey, EvpMdContext, MdCtxPurpose};
 
 use openssl_sys as ossl;
 
-pub fn verify(
-    key: &EvpKey,
-    sig: &[u8],
-    msg: &[u8],
-) -> Result<bool, String> {
+pub fn verify(key: &EvpKey, sig: &[u8], msg: &[u8]) -> Result<bool, String> {
     unsafe {
         let ctx = EvpMdContext::new(&key, MdCtxPurpose::Verify)?;
 

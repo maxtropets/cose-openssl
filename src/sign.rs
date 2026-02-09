@@ -1,4 +1,4 @@
-use crate::ossl_wrappers::{EvpMdContext, EvpKey, MdCtxPurpose};
+use crate::ossl_wrappers::{EvpKey, EvpMdContext, MdCtxPurpose};
 
 use openssl_sys as ossl;
 use std::ptr;

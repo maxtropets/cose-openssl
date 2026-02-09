@@ -27,17 +27,29 @@ mod tests {
         use crate::ossl_wrappers::WhichMLDSA;
 
         #[test]
-        fn ml_dsa_44() { sign_verify_with(KeyInitData::MLDSA(WhichMLDSA::P44)); }
+        fn ml_dsa_44() {
+            sign_verify_with(KeyInitData::MLDSA(WhichMLDSA::P44));
+        }
         #[test]
-        fn ml_dsa_65() { sign_verify_with(KeyInitData::MLDSA(WhichMLDSA::P65)); }
+        fn ml_dsa_65() {
+            sign_verify_with(KeyInitData::MLDSA(WhichMLDSA::P65));
+        }
         #[test]
-        fn ml_dsa_87() { sign_verify_with(KeyInitData::MLDSA(WhichMLDSA::P87)); }
+        fn ml_dsa_87() {
+            sign_verify_with(KeyInitData::MLDSA(WhichMLDSA::P87));
+        }
     }
 
     #[test]
-    fn ec_p256() { sign_verify_with(KeyInitData::EC(WhichEC::P256)); }
+    fn ec_p256() {
+        sign_verify_with(KeyInitData::EC(WhichEC::P256));
+    }
     #[test]
-    fn ec_p384() { sign_verify_with(KeyInitData::EC(WhichEC::P384)); }
+    fn ec_p384() {
+        sign_verify_with(KeyInitData::EC(WhichEC::P384));
+    }
     #[test]
-    fn ec_p521() { sign_verify_with(KeyInitData::EC(WhichEC::P521)); }
+    fn ec_p521() {
+        sign_verify_with(KeyInitData::EC(WhichEC::P521));
+    }
 }
