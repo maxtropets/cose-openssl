@@ -14,7 +14,7 @@ permissions: read-all
 jobs:
   ci:
     name: "CI" # CI Checks, Clang Tidy, Python package tests, Doc build, Unit tests, Partitions tests
-    runs-on: ubuntu
+    runs-on: ubuntu-slim
     container:
       image: mcr.microsoft.com/azurelinux/base/core:3.0
       options: --user root --publish-all --cap-add NET_ADMIN --cap-add NET_RAW --cap-add SYS_PTRACE
