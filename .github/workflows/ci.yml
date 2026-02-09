@@ -20,16 +20,16 @@ jobs:
     runs-on: ubuntu-slim
 
     steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: "Setup"
         shell: bash
         run: |
           set -ex
           ./scripts/setup-ubuntu.sh
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
       - name: "Run CI checks"
         shell: bash
