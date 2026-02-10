@@ -15,10 +15,31 @@ pub enum WhichMLDSA {
     P87,
 }
 
+#[cfg(feature = "pqc")]
+impl WhichMLDSA {
+    fn openssl_str(&self) -> &'static str {
+        match self {
+            WhichMLDSA::P44 => "ML-DSA-44",
+            WhichMLDSA::P65 => "ML-DSA-65",
+            WhichMLDSA::P87 => "ML-DSA-87",
+        }
+    }
+}
+
 pub enum WhichEC {
     P256,
     P384,
     P521,
+}
+
+impl WhichEC {
+    fn openssl_str(&self) -> &'static str {
+        match self {
+            WhichEC::P256 => "P-256",
+            WhichEC::P384 => "P-384",
+            WhichEC::P521 => "P-521",
+        }
+    }
 }
 
 pub enum KeyInitData {
@@ -33,12 +54,7 @@ impl EvpKey {
             let key = match data {
                 #[cfg(feature = "pqc")]
                 KeyInitData::MLDSA(which) => {
-                    let alg = CString::new(match which {
-                        WhichMLDSA::P44 => "ML-DSA-44",
-                        WhichMLDSA::P65 => "ML-DSA-65",
-                        WhichMLDSA::P87 => "ML-DSA-87",
-                    })
-                    .unwrap();
+                    let alg = CString::new(which.openssl_str()).unwrap();
                     ossl::EVP_PKEY_Q_keygen(
                         ptr::null_mut(),
                         ptr::null_mut(),
@@ -46,12 +62,7 @@ impl EvpKey {
                     )
                 }
                 KeyInitData::EC(which) => {
-                    let crv = CString::new(match which {
-                        WhichEC::P256 => "P-256",
-                        WhichEC::P384 => "P-384",
-                        WhichEC::P521 => "P-521",
-                    })
-                    .unwrap();
+                    let crv = CString::new(which.openssl_str()).unwrap();
                     let alg = CString::new("EC").unwrap();
                     ossl::EVP_PKEY_Q_keygen(
                         ptr::null_mut(),
