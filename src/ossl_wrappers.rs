@@ -102,7 +102,7 @@ pub struct SignOp;
 pub struct VerifyOp;
 
 pub trait ContextInit {
-    unsafe fn init(
+    fn init(
         ctx: *mut ossl::EVP_MD_CTX,
         key: *mut ossl::EVP_PKEY,
     ) -> Result<(), i32>;
@@ -110,20 +110,22 @@ pub trait ContextInit {
 }
 
 impl ContextInit for SignOp {
-    unsafe fn init(
+    fn init(
         ctx: *mut ossl::EVP_MD_CTX,
         key: *mut ossl::EVP_PKEY,
     ) -> Result<(), i32> {
-        let rc = ossl::EVP_DigestSignInit(
-            ctx,
-            ptr::null_mut(),
-            ptr::null_mut(),
-            ptr::null_mut(),
-            key,
-        );
-        match rc {
-            1 => Ok(()),
-            err => Err(err),
+        unsafe {
+            let rc = ossl::EVP_DigestSignInit(
+                ctx,
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+                key,
+            );
+            match rc {
+                1 => Ok(()),
+                err => Err(err),
+            }
         }
     }
     fn purpose() -> &'static str {
@@ -132,20 +134,22 @@ impl ContextInit for SignOp {
 }
 
 impl ContextInit for VerifyOp {
-    unsafe fn init(
+    fn init(
         ctx: *mut ossl::EVP_MD_CTX,
         key: *mut ossl::EVP_PKEY,
     ) -> Result<(), i32> {
-        let rc = ossl::EVP_DigestVerifyInit(
-            ctx,
-            ptr::null_mut(),
-            ptr::null_mut(),
-            ptr::null_mut(),
-            key,
-        );
-        match rc {
-            1 => Ok(()),
-            err => Err(err),
+        unsafe {
+            let rc = ossl::EVP_DigestVerifyInit(
+                ctx,
+                ptr::null_mut(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+                key,
+            );
+            match rc {
+                1 => Ok(()),
+                err => Err(err),
+            }
         }
     }
     fn purpose() -> &'static str {
