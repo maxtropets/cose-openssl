@@ -4,7 +4,7 @@ use openssl_sys as ossl;
 
 pub fn verify(key: &EvpKey, sig: &[u8], msg: &[u8]) -> Result<bool, String> {
     unsafe {
-        let ctx = EvpMdContext::new(&key, MdCtxPurpose::Verify)?;
+        let ctx = EvpMdContext::new(key, MdCtxPurpose::Verify)?;
 
         let res = ossl::EVP_DigestVerify(
             ctx.ctx,
