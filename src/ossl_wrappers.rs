@@ -380,4 +380,13 @@ mod tests {
             assert_eq!(der, der2);
         }
     }
+
+    #[test]
+    #[ignore]
+    fn intentional_leak_for_sanitizer_validation() {
+        // This test intentionally leaks memory to verify sanitizers
+        // detect it if not ignored.
+        let key = EvpKey::new(KeyType::EC(WhichEC::P256)).unwrap();
+        std::mem::forget(key);
+    }
 }
