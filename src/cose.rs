@@ -297,6 +297,22 @@ mod tests {
         sign_verify_cose(KeyType::EC(WhichEC::P521));
     }
 
+    #[test]
+    fn cose_detached_payload() {
+        let key = EvpKey::new(KeyType::EC(WhichEC::P256)).unwrap();
+        let phdr = hex::decode(TEST_PHDR).unwrap();
+        let uhdr = b"\xa0"; // empty map
+        let payload = b"Good boy...";
+
+        let envelope = cose_sign1(&key, &phdr, uhdr, payload, true).unwrap();
+
+        // Verify with the detached payload supplied externally.
+        assert!(cose_verify1(&key, &envelope, Some(payload)).unwrap());
+
+        // Verify without supplying the payload must fail.
+        assert!(cose_verify1(&key, &envelope, None).is_err());
+    }
+
     #[cfg(feature = "pqc")]
     mod pqc_tests {
         use super::*;
