@@ -10,7 +10,7 @@ pqc = []
 warnings = "deny"
 
 [dependencies]
-hex = "*"
+hex = "0.4"
 openssl-sys = "0.9"
 cborrs = { git = "https://github.com/project-everest/everparse", tag = "v2026.02.04" }
 
