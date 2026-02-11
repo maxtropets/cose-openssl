@@ -37,9 +37,9 @@ fn cose_alg(key: &EvpKey) -> Result<(CborNondetIntKind, u64), String> {
 }
 
 /// Parse a COSE_Sign1 envelope and return (phdr, payload, signature).
-fn parse_cose_sign1(
-    envelope: &[u8],
-) -> Result<(CborNondet, CborNondet, CborNondet), String> {
+fn parse_cose_sign1<'a>(
+    envelope: &'a [u8],
+) -> Result<(CborNondet<'a>, CborNondet<'a>, CborNondet<'a>), String> {
     let (tag, _) = cbor_nondet_parse(None, false, envelope)
         .ok_or("Failed to parse COSE envelope")?;
 
