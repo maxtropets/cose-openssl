@@ -214,4 +214,13 @@ mod tests {
         assert!(EvpKey::new(KeyType::EC(WhichEC::P384)).is_ok());
         assert!(EvpKey::new(KeyType::EC(WhichEC::P521)).is_ok());
     }
+
+    #[test]
+    #[ignore]
+    fn intentional_leak_for_sanitizer_validation() {
+        // This test intentionally leaks memory to verify sanitizers
+        // detect it if not ignored.
+        let key = EvpKey::new(KeyType::EC(WhichEC::P256)).unwrap();
+        std::mem::forget(key);
+    }
 }
