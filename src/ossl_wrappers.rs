@@ -97,7 +97,7 @@ impl EvpKey {
     /// Automatically detects key type (EC curve or ML-DSA variant).
     pub fn from_der(der: &[u8]) -> Result<Self, String> {
         // Parse DER using raw OpenSSL API
-        let raw = unsafe {
+        let key = unsafe {
             let mut ptr = der.as_ptr();
             let key =
                 ossl::d2i_PUBKEY(ptr::null_mut(), &mut ptr, der.len() as i64);
@@ -108,17 +108,47 @@ impl EvpKey {
         };
 
         // Detect key type using raw OpenSSL APIs
-        let typ = match Self::detect_key_type_raw(raw) {
+        let typ = match Self::detect_key_type_raw(key) {
             Ok(t) => t,
             Err(e) => {
                 unsafe {
-                    ossl::EVP_PKEY_free(raw);
+                    ossl::EVP_PKEY_free(key);
                 }
                 return Err(e);
             }
         };
 
-        Ok(EvpKey { key: raw, typ })
+        Ok(EvpKey { key, typ })
+    }
+
+    /// Create an `EvpKey` from a DER-encoded private key
+    /// (PKCS#8 or traditional format).
+    /// Automatically detects key type (EC curve or ML-DSA variant).
+    pub fn from_der_private(der: &[u8]) -> Result<Self, String> {
+        let key = unsafe {
+            let mut ptr = der.as_ptr();
+            let key = ossl::d2i_AutoPrivateKey(
+                ptr::null_mut(),
+                &mut ptr,
+                der.len() as i64,
+            );
+            if key.is_null() {
+                return Err("Failed to parse DER private key".to_string());
+            }
+            key
+        };
+
+        let typ = match Self::detect_key_type_raw(key) {
+            Ok(t) => t,
+            Err(e) => {
+                unsafe {
+                    ossl::EVP_PKEY_free(key);
+                }
+                return Err(e);
+            }
+        };
+
+        Ok(EvpKey { key, typ })
     }
 
     fn detect_key_type_raw(
@@ -192,6 +222,31 @@ impl EvpKey {
             }
 
             // Copy the DER data into a Vec and free the OpenSSL-allocated memory
+            let der_slice = std::slice::from_raw_parts(der_ptr, len as usize);
+            let der = der_slice.to_vec();
+            ossl::CRYPTO_free(
+                der_ptr as *mut std::ffi::c_void,
+                concat!(file!(), "\0").as_ptr() as *const i8,
+                line!() as i32,
+            );
+
+            Ok(der)
+        }
+    }
+
+    /// Export the private key as DER-encoded traditional format.
+    pub fn to_der_private(&self) -> Result<Vec<u8>, String> {
+        unsafe {
+            let mut der_ptr: *mut u8 = ptr::null_mut();
+            let len = ossl::i2d_PrivateKey(self.key, &mut der_ptr);
+
+            if len <= 0 || der_ptr.is_null() {
+                return Err(format!(
+                    "Failed to encode private key to DER (rc={})",
+                    len
+                ));
+            }
+
             let der_slice = std::slice::from_raw_parts(der_ptr, len as usize);
             let der = der_slice.to_vec();
             ossl::CRYPTO_free(
@@ -366,6 +421,34 @@ mod tests {
     }
 
     #[test]
+    fn from_der_private_rejects_garbage() {
+        assert!(EvpKey::from_der_private(&[0xde, 0xad, 0xbe, 0xef]).is_err());
+    }
+
+    #[test]
+    fn ec_key_private_der_roundtrip() {
+        for which in [WhichEC::P256, WhichEC::P384, WhichEC::P521] {
+            let key = EvpKey::new(KeyType::EC(which)).unwrap();
+            let priv_der = key.to_der_private().unwrap();
+            let imported = EvpKey::from_der_private(&priv_der).unwrap();
+            assert!(
+                matches!(imported.typ, KeyType::EC(_)),
+                "Expected EC key type"
+            );
+
+            // Private key re-export must be identical.
+            let priv_der2 = imported.to_der_private().unwrap();
+            assert_eq!(priv_der, priv_der2);
+
+            // Public key extracted from the reimported private key must
+            // match the original.
+            let pub1 = key.to_der().unwrap();
+            let pub2 = imported.to_der().unwrap();
+            assert_eq!(pub1, pub2);
+        }
+    }
+
+    #[test]
     #[cfg(feature = "pqc")]
     fn ml_dsa_key_from_der_roundtrip() {
         for which in [WhichMLDSA::P44, WhichMLDSA::P65, WhichMLDSA::P87] {
@@ -378,6 +461,28 @@ mod tests {
             );
             let der2 = imported.to_der().unwrap();
             assert_eq!(der, der2);
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "pqc")]
+    fn ml_dsa_key_private_der_roundtrip() {
+        for which in [WhichMLDSA::P44, WhichMLDSA::P65, WhichMLDSA::P87] {
+            let key = EvpKey::new(KeyType::MLDSA(which)).unwrap();
+            let priv_der = key.to_der_private().unwrap();
+            let imported = EvpKey::from_der_private(&priv_der).unwrap();
+            assert!(
+                matches!(imported.typ, KeyType::MLDSA(_)),
+                "Expected ML-DSA key type"
+            );
+
+            // Private key re-export must be identical.
+            let priv_der2 = imported.to_der_private().unwrap();
+            assert_eq!(priv_der, priv_der2);
+
+            let pub1 = key.to_der().unwrap();
+            let pub2 = imported.to_der().unwrap();
+            assert_eq!(pub1, pub2);
         }
     }
 
