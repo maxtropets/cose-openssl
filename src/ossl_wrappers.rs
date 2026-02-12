@@ -97,7 +97,7 @@ impl EvpKey {
     /// Automatically detects key type (EC curve or ML-DSA variant).
     pub fn from_der(der: &[u8]) -> Result<Self, String> {
         // Parse DER using raw OpenSSL API
-        let raw = unsafe {
+        let key = unsafe {
             let mut ptr = der.as_ptr();
             let key =
                 ossl::d2i_PUBKEY(ptr::null_mut(), &mut ptr, der.len() as i64);
@@ -108,24 +108,24 @@ impl EvpKey {
         };
 
         // Detect key type using raw OpenSSL APIs
-        let typ = match Self::detect_key_type_raw(raw) {
+        let typ = match Self::detect_key_type_raw(key) {
             Ok(t) => t,
             Err(e) => {
                 unsafe {
-                    ossl::EVP_PKEY_free(raw);
+                    ossl::EVP_PKEY_free(key);
                 }
                 return Err(e);
             }
         };
 
-        Ok(EvpKey { key: raw, typ })
+        Ok(EvpKey { key, typ })
     }
 
     /// Create an `EvpKey` from a DER-encoded private key
     /// (PKCS#8 or traditional format).
     /// Automatically detects key type (EC curve or ML-DSA variant).
     pub fn from_der_private(der: &[u8]) -> Result<Self, String> {
-        let raw = unsafe {
+        let key = unsafe {
             let mut ptr = der.as_ptr();
             let key = ossl::d2i_AutoPrivateKey(
                 ptr::null_mut(),
@@ -138,17 +138,17 @@ impl EvpKey {
             key
         };
 
-        let typ = match Self::detect_key_type_raw(raw) {
+        let typ = match Self::detect_key_type_raw(key) {
             Ok(t) => t,
             Err(e) => {
                 unsafe {
-                    ossl::EVP_PKEY_free(raw);
+                    ossl::EVP_PKEY_free(key);
                 }
                 return Err(e);
             }
         };
 
-        Ok(EvpKey { key: raw, typ })
+        Ok(EvpKey { key, typ })
     }
 
     fn detect_key_type_raw(
