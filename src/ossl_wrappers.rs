@@ -436,6 +436,10 @@ mod tests {
                 "Expected EC key type"
             );
 
+            // Private key re-export must be identical.
+            let priv_der2 = imported.to_der_private().unwrap();
+            assert_eq!(priv_der, priv_der2);
+
             // Public key extracted from the reimported private key must
             // match the original.
             let pub1 = key.to_der().unwrap();
@@ -471,6 +475,10 @@ mod tests {
                 matches!(imported.typ, KeyType::MLDSA(_)),
                 "Expected ML-DSA key type"
             );
+
+            // Private key re-export must be identical.
+            let priv_der2 = imported.to_der_private().unwrap();
+            assert_eq!(priv_der, priv_der2);
 
             let pub1 = key.to_der().unwrap();
             let pub2 = imported.to_der().unwrap();
