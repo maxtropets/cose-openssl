@@ -53,7 +53,7 @@ impl WhichEC {
         }
     }
 
-    fn openssl_group_name(&self) -> &'static str {
+    fn openssl_group(&self) -> &'static str {
         match self {
             WhichEC::P256 => "prime256v1",
             WhichEC::P384 => "secp384r1",
@@ -64,9 +64,10 @@ impl WhichEC {
 
 #[derive(Debug)]
 pub enum KeyType {
+    EC(WhichEC),
+
     #[cfg(feature = "pqc")]
     MLDSA(WhichMLDSA),
-    EC(WhichEC),
 }
 
 #[derive(Debug)]
@@ -79,15 +80,6 @@ impl EvpKey {
     pub fn new(typ: KeyType) -> Result<Self, String> {
         unsafe {
             let key = match &typ {
-                #[cfg(feature = "pqc")]
-                KeyType::MLDSA(which) => {
-                    let alg = CString::new(which.openssl_str()).unwrap();
-                    ossl::EVP_PKEY_Q_keygen(
-                        ptr::null_mut(),
-                        ptr::null_mut(),
-                        alg.as_ptr(),
-                    )
-                }
                 KeyType::EC(which) => {
                     let crv = CString::new(which.openssl_str()).unwrap();
                     let alg = CString::new("EC").unwrap();
@@ -96,6 +88,16 @@ impl EvpKey {
                         ptr::null_mut(),
                         alg.as_ptr(),
                         crv.as_ptr(),
+                    )
+                }
+
+                #[cfg(feature = "pqc")]
+                KeyType::MLDSA(which) => {
+                    let alg = CString::new(which.openssl_str()).unwrap();
+                    ossl::EVP_PKEY_Q_keygen(
+                        ptr::null_mut(),
+                        ptr::null_mut(),
+                        alg.as_ptr(),
                     )
                 }
             };
@@ -168,7 +170,6 @@ impl EvpKey {
         pkey: *mut ossl::EVP_PKEY,
     ) -> Result<KeyType, String> {
         unsafe {
-            // EC: check algorithm, then match curve by group name.
             let ec = CString::new("EC").unwrap();
             if EVP_PKEY_is_a(pkey as *const _, ec.as_ptr()) == 1 {
                 let mut buf = [0u8; 64];
@@ -186,14 +187,13 @@ impl EvpKey {
                     .map_err(|_| "EC group name is not UTF-8".to_string())?;
 
                 for variant in [WhichEC::P256, WhichEC::P384, WhichEC::P521] {
-                    if group == variant.openssl_group_name() {
+                    if group == variant.openssl_group() {
                         return Ok(KeyType::EC(variant));
                     }
                 }
                 return Err(format!("Unsupported EC curve: {}", group));
             }
 
-            // ML-DSA: each variant has its own algorithm name.
             #[cfg(feature = "pqc")]
             for variant in [WhichMLDSA::P44, WhichMLDSA::P65, WhichMLDSA::P87] {
                 let cname = CString::new(variant.openssl_str()).unwrap();
@@ -391,14 +391,13 @@ pub fn ecdsa_fixed_to_der(
             return Err("ECDSA_SIG_new failed".to_string());
         }
 
-        // ECDSA_SIG_set0 takes ownership of r and s on success.
         if ossl::ECDSA_SIG_set0(sig, r, s) != 1 {
             ossl::ECDSA_SIG_free(sig);
-            // set0 did not take ownership, so free r/s.
             ossl::BN_free(r);
             ossl::BN_free(s);
             return Err("ECDSA_SIG_set0 failed".to_string());
         }
+        // ECDSA_SIG_set0 takes ownership of r and s on success.
 
         let mut out_ptr: *mut u8 = ptr::null_mut();
         let len = ossl::i2d_ECDSA_SIG(sig, &mut out_ptr);

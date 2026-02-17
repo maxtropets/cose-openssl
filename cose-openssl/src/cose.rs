@@ -31,10 +31,12 @@ fn cbor_serialize(item: CborNondet) -> Result<Vec<u8>, String> {
 fn cose_alg(key: &EvpKey) -> Result<(CborNondetIntKind, u64), String> {
     // EverCBOR starts counting negs from -1, so Neg 7 is -8, for instance.
     // Therefore, substract 1 from the absolute value before convertion.
+    //
+    // https://www.iana.org/assignments/cose/cose.xhtml
     match &key.typ {
-        KeyType::EC(WhichEC::P256) => Ok((CborNondetIntKind::NegInt64, 7 - 1)), // ES256 = -7
-        KeyType::EC(WhichEC::P384) => Ok((CborNondetIntKind::NegInt64, 35 - 1)), // ES384 = -35
-        KeyType::EC(WhichEC::P521) => Ok((CborNondetIntKind::NegInt64, 36 - 1)), // ES512 = -36
+        KeyType::EC(WhichEC::P256) => Ok((CborNondetIntKind::NegInt64, 7 - 1)),
+        KeyType::EC(WhichEC::P384) => Ok((CborNondetIntKind::NegInt64, 35 - 1)),
+        KeyType::EC(WhichEC::P521) => Ok((CborNondetIntKind::NegInt64, 36 - 1)),
         #[cfg(feature = "pqc")]
         KeyType::MLDSA(which) => match which {
             WhichMLDSA::P44 => Ok((CborNondetIntKind::NegInt64, 48 - 1)),
@@ -145,7 +147,6 @@ pub fn cose_sign1(
     let tbs = sig_structure(&phdr_bytes, payload)?;
     let sig = crate::sign::sign(key, &tbs)?;
 
-    // ECDSA: convert from DER to COSE fixed-size (r || s) per RFC 9053 s2.1.
     let sig = match &key.typ {
         KeyType::EC(_) => ecdsa_der_to_fixed(&sig, key.ec_field_size()?)?,
         #[cfg(feature = "pqc")]
@@ -239,7 +240,6 @@ pub fn cose_verify1(
         _ => Err("Signature is not a byte string".to_string()),
     }?;
 
-    // ECDSA: convert from COSE fixed-size (r || s) to DER for OpenSSL.
     let sig = match &key.typ {
         KeyType::EC(_) => ecdsa_fixed_to_der(&sig, key.ec_field_size()?)?,
         #[cfg(feature = "pqc")]
@@ -355,6 +355,7 @@ mod tests {
         // Sign with DER-reimported private key
         let envelope =
             cose_sign1(&signing_key, &phdr, uhdr, payload, false).unwrap();
+
         // Verify with DER-imported public key
         assert!(cose_verify1(&verification_key, &envelope, None).unwrap());
     }
@@ -396,6 +397,7 @@ mod tests {
             // Sign with DER-reimported private key
             let envelope =
                 cose_sign1(&signing_key, &phdr, uhdr, payload, false).unwrap();
+
             // Verify with DER-imported public key
             assert!(cose_verify1(&verification_key, &envelope, None).unwrap());
         }
