@@ -31,7 +31,7 @@ pub fn sign(key: &EvpKey, msg: &[u8]) -> Result<Vec<u8>, String> {
             return Err(format!("Failed to sign, err: {}", res));
         }
 
-        // Not always fixed, e.g. for EC keys. More on this here:
+        // Not always fixed size, e.g. for EC keys. More on this here:
         // https://docs.openssl.org/3.0/man3/EVP_DigestSignInit/#description.
         sig.truncate(sig_size);
 
