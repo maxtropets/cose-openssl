@@ -217,21 +217,27 @@ pub fn cose_verify1(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hex;
+    fn hex_decode(s: &str) -> Vec<u8> {
+        assert!(s.len() % 2 == 0, "odd-length hex string");
+        (0..s.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&s[i..i + 2], 16).unwrap())
+            .collect()
+    }
 
     const TEST_PHDR: &str = "A319018B020FA3061A698B72820173736572766963652E6578616D706C652E636F6D02706C65646765722E7369676E6174757265666363662E7631A1647478696465322E313334";
 
     #[test]
     fn test_parse_cose() {
         let in_str = "d284588da50138220458406661363331386532666561643537313035326231383230393236653865653531313030623630633161383239393362333031353133383561623334343237303019018b020fa3061a698b72820173736572766963652e6578616d706c652e636f6d02706c65646765722e7369676e6174757265666363662e7631a1647478696465322e313334a119018ca12081590100a2018358204208b5b5378c253f49641ab2edb58b557c75cdbb85ae9327930362c84ebba694784963653a322e3133333a3066646666336265663338346237383231316363336434306463363333663336383364353963643930303864613037653030623266356464323734613365633758200000000000000000000000000000000000000000000000000000000000000000028382f5582081980abb4e161b2f3d306c185ef9f7ce84cf5a3b0c8978da82e049d761adfd0082f55820610e8b89721667f99305e7ce4befe0b3b393821a3f72713f89961ebc7e81de6382f55820cbe0d3307b00aa9f324e29c8fb26508404af81044c7adcd4f5b41043d92aff23f6586005784bfccce87452a35a0cd14df5ed8a38c8937f63fb6b522fb94a1551c0e061893bb35fba1fa6fea322b080a14c0894c3864bf4e76df04ffb0f7c350366f91c0d522652d8fa3ebad6ba0270b48e43a065312c759d8bc9a413d4270d5ba86182";
-        let v = hex::decode(in_str).unwrap();
+        let v = hex_decode(in_str);
         let (_phdr, _payload, _sig) = parse_cose_sign1(&v).unwrap();
     }
 
     #[test]
     fn test_insert_alg() {
         let key = EvpKey::new(KeyType::EC(WhichEC::P256)).unwrap();
-        let phdr_bytes = hex::decode(TEST_PHDR).unwrap();
+        let phdr_bytes = hex_decode(TEST_PHDR);
         let phdr = CborValue::from_bytes(&phdr_bytes).unwrap();
         let phdr_with_alg = insert_alg_value(&key, phdr).unwrap();
 
@@ -245,7 +251,7 @@ mod tests {
 
     fn sign_verify_cose_encoded(key_type: KeyType) {
         let key = EvpKey::new(key_type).unwrap();
-        let phdr = hex::decode(TEST_PHDR).unwrap();
+        let phdr = hex_decode(TEST_PHDR);
         let uhdr = b"\xa0"; // empty map
         let payload = b"Good boy...";
 
@@ -256,7 +262,7 @@ mod tests {
 
     fn sign_verify_cose(key_type: KeyType) {
         let key = EvpKey::new(key_type).unwrap();
-        let phdr_bytes = hex::decode(TEST_PHDR).unwrap();
+        let phdr_bytes = hex_decode(TEST_PHDR);
         let phdr = CborValue::from_bytes(&phdr_bytes).unwrap();
         let uhdr = CborValue::Map(vec![]); // empty map
         let payload = b"Good boy...";
@@ -298,7 +304,7 @@ mod tests {
     #[test]
     fn cose_detached_payload() {
         let key = EvpKey::new(KeyType::EC(WhichEC::P256)).unwrap();
-        let phdr_bytes = hex::decode(TEST_PHDR).unwrap();
+        let phdr_bytes = hex_decode(TEST_PHDR);
         let phdr = CborValue::from_bytes(&phdr_bytes).unwrap();
         let uhdr = CborValue::Map(vec![]);
         let payload = b"Good boy...";
@@ -315,7 +321,7 @@ mod tests {
     #[test]
     fn cose_detached_payload_encoded() {
         let key = EvpKey::new(KeyType::EC(WhichEC::P256)).unwrap();
-        let phdr = hex::decode(TEST_PHDR).unwrap();
+        let phdr = hex_decode(TEST_PHDR);
         let uhdr = b"\xa0"; // empty map
         let payload = b"Good boy...";
 
@@ -342,7 +348,7 @@ mod tests {
         let pub_der = original_key.to_der_public().unwrap();
         let verification_key = EvpKey::from_der_public(&pub_der).unwrap();
 
-        let phdr_bytes = hex::decode(TEST_PHDR).unwrap();
+        let phdr_bytes = hex_decode(TEST_PHDR);
         let phdr = CborValue::from_bytes(&phdr_bytes).unwrap();
         let uhdr = CborValue::Map(vec![]);
         let payload = b"test with DER-imported key";
@@ -385,7 +391,7 @@ mod tests {
             let pub_der = original_key.to_der_public().unwrap();
             let verification_key = EvpKey::from_der_public(&pub_der).unwrap();
 
-            let phdr_bytes = hex::decode(TEST_PHDR).unwrap();
+            let phdr_bytes = hex_decode(TEST_PHDR);
             let phdr = CborValue::from_bytes(&phdr_bytes).unwrap();
             let uhdr = CborValue::Map(vec![]);
             let payload = b"ML-DSA with DER-imported key";

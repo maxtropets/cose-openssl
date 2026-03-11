@@ -1,6 +1,28 @@
 use cborrs::cbordet::*;
 use cborrs_nondet::cbornondet::*;
-use typed_arena::Arena;
+
+struct SimpleArena<T>(std::cell::RefCell<Vec<Box<[T]>>>);
+
+impl<T> SimpleArena<T> {
+    fn new() -> Self {
+        Self(std::cell::RefCell::new(Vec::new()))
+    }
+
+    fn alloc(&self, val: T) -> &mut T {
+        self.alloc_extend(std::iter::once(val)).first_mut().unwrap()
+    }
+
+    fn alloc_extend(&self, vals: impl IntoIterator<Item = T>) -> &mut [T] {
+        let boxed: Box<[T]> = vals.into_iter().collect();
+        let mut store = self.0.borrow_mut();
+        store.push(boxed);
+        let slot = store.last_mut().unwrap();
+        // SAFETY: The returned reference borrows `self`, which owns the
+        // backing storage. Items are never moved or removed, so the
+        // reference remains valid for the lifetime of the arena.
+        unsafe { &mut *(slot.as_mut() as *mut [T]) }
+    }
+}
 
 /// An owned CBOR value supporting arbitrary nesting.
 ///
@@ -28,8 +50,8 @@ impl CborValue {
 
     /// Serialize this value to deterministic CBOR bytes.
     pub fn to_bytes(&self) -> Result<Vec<u8>, String> {
-        let item_arena: Arena<CborDet<'_>> = Arena::new();
-        let entry_arena: Arena<CborDetMapEntry<'_>> = Arena::new();
+        let item_arena: SimpleArena<CborDet<'_>> = SimpleArena::new();
+        let entry_arena: SimpleArena<CborDetMapEntry<'_>> = SimpleArena::new();
         let raw = self.to_raw(&item_arena, &entry_arena)?;
         serialize_det(raw)
     }
@@ -41,8 +63,8 @@ impl CborValue {
     /// exactly once.
     fn to_raw<'a>(
         &'a self,
-        items: &'a Arena<CborDet<'a>>,
-        entries: &'a Arena<CborDetMapEntry<'a>>,
+        items: &'a SimpleArena<CborDet<'a>>,
+        entries: &'a SimpleArena<CborDetMapEntry<'a>>,
     ) -> Result<CborDet<'a>, String> {
         match self {
             CborValue::Int(v) => {
