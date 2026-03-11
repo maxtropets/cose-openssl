@@ -3,9 +3,17 @@
 version = 4
 
 [[package]]
+name = "cborrs"
+version = "0.1.0"
+source = "git+https://github.com/maxtropets/everparse.git?branch=f%2Funique-cargo-crates#ba7d7e915306fe3bad2053636a8508d69c7fe246"
+dependencies = [
+ "static_assertions",
+]
+
+[[package]]
 name = "cborrs-nondet"
 version = "0.1.0"
-source = "git+https://github.com/maxtropets/everparse.git?branch=f%2Funique-cargo-crates#9ca1f94ac68cfd49b6e17c51ce8a80a8658448b3"
+source = "git+https://github.com/maxtropets/everparse.git?branch=f%2Funique-cargo-crates#ba7d7e915306fe3bad2053636a8508d69c7fe246"
 dependencies = [
  "static_assertions",
 ]
@@ -24,6 +32,7 @@ dependencies = [
 name = "cose-openssl"
 version = "0.1.0"
 dependencies = [
+ "cborrs",
  "cborrs-nondet",
  "hex",
  "openssl-sys",

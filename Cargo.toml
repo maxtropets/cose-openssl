@@ -16,4 +16,5 @@ warnings = "deny"
 hex = "0.4"
 openssl-sys = "0.9"
 typed-arena = "2"
+cborrs = { git  = "https://github.com/maxtropets/everparse.git", branch = "f/unique-cargo-crates" }
 cborrs-nondet = { git  = "https://github.com/maxtropets/everparse.git", branch = "f/unique-cargo-crates" }

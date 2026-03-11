@@ -1,3 +1,4 @@
+use cborrs::cbordet::*;
 use cborrs_nondet::cbornondet::*;
 use typed_arena::Arena;
 
@@ -25,62 +26,62 @@ impl CborValue {
         Self::from_raw(item)
     }
 
-    /// Serialize this value to CBOR bytes.
+    /// Serialize this value to deterministic CBOR bytes.
     pub fn to_bytes(&self) -> Result<Vec<u8>, String> {
-        let item_arena: Arena<CborNondet<'_>> = Arena::new();
-        let entry_arena: Arena<CborNondetMapEntry<'_>> = Arena::new();
+        let item_arena: Arena<CborDet<'_>> = Arena::new();
+        let entry_arena: Arena<CborDetMapEntry<'_>> = Arena::new();
         let raw = self.to_raw(&item_arena, &entry_arena)?;
-        serialize(raw)
+        serialize_det(raw)
     }
 
-    /// Build a `CborNondet` tree without serializing.
+    /// Build a `CborDet` tree without serializing.
     ///
     /// Child nodes are allocated in the arenas so they stay alive long enough
     /// for the parent to borrow them. The caller serializes the returned root
     /// exactly once.
     fn to_raw<'a>(
         &'a self,
-        items: &'a Arena<CborNondet<'a>>,
-        entries: &'a Arena<CborNondetMapEntry<'a>>,
-    ) -> Result<CborNondet<'a>, String> {
+        items: &'a Arena<CborDet<'a>>,
+        entries: &'a Arena<CborDetMapEntry<'a>>,
+    ) -> Result<CborDet<'a>, String> {
         match self {
             CborValue::Int(v) => {
-                let (kind, raw) = Self::i64_to_cbor_int(*v);
-                Ok(cbor_nondet_mk_int64(kind, raw))
+                let (kind, raw) = Self::i64_to_det_int(*v);
+                Ok(cbor_det_mk_int64(kind, raw))
             }
-            CborValue::Simple(v) => cbor_nondet_mk_simple_value(*v)
+            CborValue::Simple(v) => cbor_det_mk_simple_value(*v)
                 .ok_or("Failed to make CBOR simple value".to_string()),
-            CborValue::ByteString(b) => cbor_nondet_mk_byte_string(b)
+            CborValue::ByteString(b) => cbor_det_mk_byte_string(b)
                 .ok_or("Failed to make CBOR byte string".to_string()),
-            CborValue::TextString(s) => cbor_nondet_mk_text_string(s)
+            CborValue::TextString(s) => cbor_det_mk_text_string(s)
                 .ok_or("Failed to make CBOR text string".to_string()),
             CborValue::Array(children) => {
-                let raw_children: Vec<CborNondet<'a>> = children
+                let raw_children: Vec<CborDet<'a>> = children
                     .iter()
                     .map(|c| c.to_raw(items, entries))
                     .collect::<Result<_, _>>()?;
                 let slice = items.alloc_extend(raw_children);
-                cbor_nondet_mk_array(slice)
+                cbor_det_mk_array(slice)
                     .ok_or("Failed to build CBOR array".to_string())
             }
             CborValue::Map(map_entries) => {
-                let raw: Vec<CborNondetMapEntry<'a>> = map_entries
+                let raw: Vec<CborDetMapEntry<'a>> = map_entries
                     .iter()
                     .map(|(k, v)| {
-                        Ok(cbor_nondet_mk_map_entry(
+                        Ok(cbor_det_mk_map_entry(
                             k.to_raw(items, entries)?,
                             v.to_raw(items, entries)?,
                         ))
                     })
                     .collect::<Result<_, String>>()?;
                 let slice = entries.alloc_extend(raw);
-                cbor_nondet_mk_map(slice)
+                cbor_det_mk_map(slice)
                     .ok_or("Failed to build CBOR map".to_string())
             }
             CborValue::Tagged { tag, payload } => {
                 let inner = payload.to_raw(items, entries)?;
                 let inner_ref = items.alloc(inner);
-                Ok(cbor_nondet_mk_tagged(*tag, inner_ref))
+                Ok(cbor_det_mk_tagged(*tag, inner_ref))
             }
         }
     }
@@ -173,17 +174,15 @@ impl CborValue {
         }
     }
 
-    fn i64_to_cbor_int(v: i64) -> (CborNondetIntKind, u64) {
+    fn i64_to_det_int(v: i64) -> (CborDetIntKind, u64) {
         if v >= 0 {
-            (CborNondetIntKind::UInt64, v as u64)
+            (CborDetIntKind::UInt64, v as u64)
         } else {
-            // CBOR encodes negative n as -(1 + encoded), so encoded = -n - 1.
-            // Use wrapping arithmetic to handle i64::MIN without overflow.
-            (CborNondetIntKind::NegInt64, (v as u64).wrapping_neg() - 1)
+            (CborDetIntKind::NegInt64, (v as u64).wrapping_neg() - 1)
         }
     }
 
-    fn cbor_int_to_i64(
+    fn nondet_int_to_i64(
         kind: CborNondetIntKind,
         value: u64,
     ) -> Result<i64, String> {
@@ -205,7 +204,7 @@ impl CborValue {
     fn from_raw(item: CborNondet) -> Result<Self, String> {
         match cbor_nondet_destruct(item) {
             CborNondetView::Int64 { kind, value } => {
-                Ok(CborValue::Int(Self::cbor_int_to_i64(kind, value)?))
+                Ok(CborValue::Int(Self::nondet_int_to_i64(kind, value)?))
             }
             CborNondetView::SimpleValue { _0: v } => Ok(CborValue::Simple(v)),
             CborNondetView::ByteString { payload } => {
@@ -246,11 +245,11 @@ impl CborValue {
     }
 }
 
-fn serialize(item: CborNondet) -> Result<Vec<u8>, String> {
-    let sz = cbor_nondet_size(item, usize::MAX)
+fn serialize_det(item: CborDet) -> Result<Vec<u8>, String> {
+    let sz = cbor_det_size(item, usize::MAX)
         .ok_or("Failed to estimate CBOR serialization size")?;
     let mut buf = vec![0u8; sz];
-    let written = cbor_nondet_serialize(item, &mut buf)
+    let written = cbor_det_serialize(item, &mut buf)
         .ok_or("Failed to serialize CBOR")?;
     if sz != written {
         return Err(format!(
@@ -286,7 +285,10 @@ mod tests {
     fn round_trip(val: &CborValue) {
         let bytes = val.to_bytes().unwrap();
         let parsed = CborValue::from_bytes(&bytes).unwrap();
-        assert_eq!(val, &parsed);
+        // Det serialization may reorder map keys, so compare the
+        // re-serialized bytes rather than the structural values.
+        let bytes2 = parsed.to_bytes().unwrap();
+        assert_eq!(bytes, bytes2);
     }
 
     // --- Int ---
