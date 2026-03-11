@@ -5,7 +5,7 @@ version = 4
 [[package]]
 name = "cborrs"
 version = "0.1.0"
-source = "git+https://github.com/maxtropets/everparse.git?branch=f%2Funique-cargo-crates#ba7d7e915306fe3bad2053636a8508d69c7fe246"
+source = "git+https://github.com/project-everest/everparse.git?tag=v2026.02.25#f4cd5ffa183edd5cc824d66588012bcf8d0bdccd"
 dependencies = [
  "static_assertions",
 ]
@@ -13,7 +13,7 @@ dependencies = [
 [[package]]
 name = "cborrs-nondet"
 version = "0.1.0"
-source = "git+https://github.com/maxtropets/everparse.git?branch=f%2Funique-cargo-crates#ba7d7e915306fe3bad2053636a8508d69c7fe246"
+source = "git+https://github.com/project-everest/everparse.git?tag=v2026.02.25#f4cd5ffa183edd5cc824d66588012bcf8d0bdccd"
 dependencies = [
  "static_assertions",
 ]
@@ -34,9 +34,7 @@ version = "0.1.0"
 dependencies = [
  "cborrs",
  "cborrs-nondet",
- "hex",
  "openssl-sys",
- "typed-arena",
 ]
 
 [[package]]
@@ -44,12 +42,6 @@ name = "find-msvc-tools"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582"
-
-[[package]]
-name = "hex"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "libc"
@@ -86,12 +78,6 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
-
-[[package]]
-name = "typed-arena"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6af6ae20167a9ece4bcb41af5b80f8a1f1df981f6391189ce00fd257af04126a"
 
 [[package]]
 name = "vcpkg"
