@@ -249,8 +249,8 @@ fn serialize_det(item: CborDet) -> Result<Vec<u8>, String> {
     let sz = cbor_det_size(item, usize::MAX)
         .ok_or("Failed to estimate CBOR serialization size")?;
     let mut buf = vec![0u8; sz];
-    let written = cbor_det_serialize(item, &mut buf)
-        .ok_or("Failed to serialize CBOR")?;
+    let written =
+        cbor_det_serialize(item, &mut buf).ok_or("Failed to serialize CBOR")?;
     if sz != written {
         return Err(format!(
             "CBOR serialize mismatch: written {written} != expected {sz}"
